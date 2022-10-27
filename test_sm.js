@@ -8,7 +8,6 @@ function pw(size, iters, warmup) {
     let b = a
     for (let i = 0; i < K; ++i) {
       b = b.add(a)
-      if (i && i % 200 === 0) { b.eval() }
     }
     const o = b.sum().toFloat32()
   }
@@ -75,8 +74,33 @@ function mm_pw(size, iters, warmup) {
   console.log(`${r(kitersec)}K iter/s`)
 }
 
+function mha(size, iters, warmup) {
+  const N = size
+  const module = new sm.module.TransformerMultiheadAttention(N, 8)
+  const qk = sm.randn([32, 32, N])
+  const v = sm.randn([32, 32, N])
+
+  const op = (K) => {
+    let out = null
+    for (let i = 0; i < K; ++i) {
+      out = module(qk, qk, v)
+      out.eval()
+    }
+    const o = out.sum().toFloat32()
+    return o
+  }
+
+  op(warmup)
+  const t0 = performance.now();
+  op(iters)
+  const t1 = performance.now();
+
+  const itersec = iters / (t1-t0) * 1e3
+  console.log(`${r(itersec)} iter/s`)
+}
+
 function err() {
-  console.log(`usage: ${process.argv[0]} ${process.argv[1]} {pw,mm,mm_pw} size iters warmup`)
+  console.log(`usage: ${process.argv[0]} ${process.argv[1]} {pw,mm,mm_pw,mha} size iters warmup`)
   process.exit(1)
 }
 if (process.argv.length < 6) {
@@ -91,6 +115,8 @@ if (v === "pw") {
   pw(size, iters, warmup)
 } else if (v === "mm_pw") {
   mm_pw(size, iters, warmup)
-} else {
+} else if (v === "mm") {
   mm(size, iters, warmup)
+} else if (v === "mha") {
+  mha(size, iters, warmup)
 }

@@ -67,6 +67,23 @@ def mm_pw(size, iters, warmup):
     kitersec = iters / ((t1 - t0) * 1e3)
     print(f"{kitersec:.3f}K iter/s")
 
+def mha(size, iters, warmup):
+  N = size
+  mha_model = torch.nn.MultiheadAttention(N, 8).eval()
+  qk = torch.rand((32, 32, N))
+  v = torch.rand((32, 32, N))
+  def op(K):
+     for i in range(K):
+       out = mha_model(qk, qk, v)[0]
+     o = out.sum().item()
+
+  op(warmup)
+  t0 = time.time()
+  op(iters)
+  t1 = time.time()
+
+  itersec = iters / (t1 - t0)
+  print(f"{itersec:.3f} iter/s")
 
 def err(n):
     print(f"usage: python {n} {pw,mm} size iters warmup")
@@ -76,7 +93,7 @@ def err(n):
 if len(sys.argv) < 5:
     err(sys.argv[0])
 var = sys.argv[1]
-if not var in ["mm", "pw", "mm_pw"]:
+if not var in ["mm", "pw", "mm_pw", "mha"]:
     err(sys.argv[0])
 size = int(sys.argv[2])
 iters = int(sys.argv[3])
@@ -86,5 +103,7 @@ if var == "pw":
     pw(size, iters, warmup)
 elif var == "mm_pw":
     mm_pw(size, iters, warmup)
-else:
+elif var == "mm":
     mm(size, iters, warmup)
+elif var == "mha":
+    mha(size, iters, warmup)
