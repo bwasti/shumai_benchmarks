@@ -69,9 +69,9 @@ def mm_pw(size, iters, warmup):
 
 def mha(size, iters, warmup):
   N = size
-  mha_model = torch.nn.MultiheadAttention(N, 8).eval()
-  qk = torch.rand((32, 32, N))
-  v = torch.rand((32, 32, N))
+  mha_model = torch.nn.MultiheadAttention(N, 8).eval().to(device)
+  qk = torch.rand((32, 32, N)).to(device)
+  v = torch.rand((32, 32, N)).to(device)
   def op(K):
      for i in range(K):
        out = mha_model(qk, qk, v)[0]
